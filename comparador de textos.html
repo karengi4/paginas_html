@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>¿Qué cambió en este texto? — Comparador de textos</title>
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-page: #f2f9f8;
+      --bg-card: #ffffff;
+      --bg-soft: #e6f6f4;
+      --bg-coral-soft: #fff1ed;
+      --aqua-dark: #0f5c59;
+      --aqua: #14827d;
+      --coral: #e06d53;
+      --coral-hover: #c9573e;
+      --text-main: #172a2c;
+      --text-muted: #4b6366;
+      --border: #c6e6e2;
+      --add-bg: #dcfce7;
+      --add-border: #86efac;
+      --add-text: #14532d;
+      --del-bg: #fee2e2;
+      --del-border: #fca5a5;
+      --del-text: #7f1d1d;
+      --active-ring: #0f5c59;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.55;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+    }
+
+    header.app-header {
+      background: linear-gradient(135deg, var(--aqua-dark) 0%, var(--aqua) 65%, var(--coral) 130%);
+      color: #ffffff;
+      padding: 1.75rem 2rem;
+      border-radius: var(--radius);
+    }
+
+    header.app-header h1 {
+      font-size: clamp(1.55rem, 3vw, 2.15rem);
+      margin-bottom: 0.35rem;
+    }
+
+    header.app-header p {
+      color: #ecfdf5;
+      font-size: 0.98rem;
+      max-width: 820px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .panel-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.55rem;
+    }
+
+    label.panel-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--aqua-dark);
+    }
+
+    .panel-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+
+    .file-btn {
+      background: var(--bg-soft);
+      color: var(--aqua-dark);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .file-btn:hover {
+      background: #d2eeea;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      background: #fbfffe;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: 2px solid var(--aqua);
+      border-color: var(--aqua);
+    }
+
+    .error-msg {
+      margin-top: 0.45rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #b91c1c;
+      min-height: 1.25rem;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 0.48rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+
+    .checks {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .checks label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    button.btn {
+      padding: 0.58rem 1rem;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.12s ease;
+    }
+
+    button.btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--aqua-dark);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--aqua);
+    }
+
+    .btn-coral {
+      background: var(--coral);
+      color: #ffffff;
+    }
+
+    .btn-coral:hover {
+      background: var(--coral-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-soft);
+      color: var(--aqua-dark);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #d2eeea;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-box {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+    }
+
+    .stat-box .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .stat-box .stat-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--aqua-dark);
+    }
+
+    .result-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .diff-added {
+      background-color: var(--add-bg);
+      color: var(--add-text);
+      border-bottom: 2px solid var(--add-border);
+      padding: 0.05rem 0.2rem;
+      border-radius: 4px;
+    }
+
+    .diff-removed {
+      background-color: var(--del-bg);
+      color: var(--del-text);
+      text-decoration: line-through;
+      border-bottom: 2px solid var(--del-border);
+      padding: 0.05rem 0.2rem;
+      border-radius: 4px;
+    }
+
+    .diff-active {
+      outline: 3px solid var(--active-ring);
+      border-radius: 5px;
+    }
+
+    .unified-view {
+      background: #fbfffe;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.98rem;
+    }
+
+    .side-by-side-view {
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .side-col {
+      background: #fbfffe;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      max-height: 380px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.96rem;
+    }
+
+    .side-col h3 {
+      font-size: 0.9rem;
+      color: var(--aqua-dark);
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .status-toast {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--aqua-dark);
+      min-height: 1.3rem;
+    }
+
+    @media (max-width: 820px) {
+      .inputs-grid,
+      .side-by-side-view {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+      }
+
+      .no-print,
+      .file-btn {
+        display: none !important;
+      }
+
+      .card,
+      header.app-header {
+        border: none;
+        box-shadow: none;
+      }
+
+      .diff-added {
+        background-color: #dcfce7 !important;
+        color: #14532d !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .diff-removed {
+        background-color: #fee2e2 !important;
+        color: #7f1d1d !important;
+        text-decoration: line-through !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <h1>¿Qué cambió en este texto?</h1>
+      <p>Comparador de textos para revisar versiones de resoluciones, borradores o documentos — todo se procesa en tu navegador y nada queda guardado al cerrar.</p>
+    </header>
+
+    <section class="card no-print">
+      <div class="inputs-grid">
+        <div>
+          <div class="panel-top">
+            <label class="panel-title" for="textoOriginal">Versión original</label>
+            <div class="panel-meta">
+              <span id="contadorOriginal">0 palabras</span>
+              <label class="file-btn" for="archivoOriginal">Cargar archivo</label>
+              <input type="file" id="archivoOriginal" accept=".txt,.docx" hidden />
+            </div>
+          </div>
+          <textarea id="textoOriginal" placeholder="Pegá acá el modelo o versión anterior..."></textarea>
+          <div class="error-msg" id="errorOriginal" role="alert"></div>
+        </div>
+
+        <div>
+          <div class="panel-top">
+            <label class="panel-title" for="textoNuevo">Versión nueva</label>
+            <div class="panel-meta">
+              <span id="contadorNuevo">0 palabras</span>
+              <label class="file-btn" for="archivoNuevo">Cargar archivo</label>
+              <input type="file" id="archivoNuevo" accept=".txt,.docx" hidden />
+            </div>
+          </div>
+          <textarea id="textoNuevo" placeholder="Pegá acá la nueva versión con tus cambios..."></textarea>
+          <div class="error-msg" id="errorNuevo" role="alert"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card controls-bar no-print">
+      <div class="controls-row">
+        <div class="control-group">
+          <label for="nivelComparacion"><strong>Nivel de comparación:</strong></label>
+          <select id="nivelComparacion">
+            <option value="words" selected>Por palabra</option>
+            <option value="sentences">Por oración</option>
+            <option value="lines">Por línea</option>
+          </select>
+        </div>
+
+        <div class="checks">
+          <label><input type="checkbox" id="ignorarMayusculas" /> Ignorar mayúsculas y minúsculas</label>
+          <label><input type="checkbox" id="ignorarEspacios" /> Ignorar espacios extra y saltos de línea</label>
+          <label><input type="checkbox" id="ignorarPuntuacion" /> Ignorar signos de puntuación</label>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="btnComparar">Comparar</button>
+          <button type="button" class="btn btn-secondary" id="btnIntercambiar">Intercambiar textos</button>
+          <button type="button" class="btn btn-secondary" id="btnCargarEjemplo">Cargar ejemplo</button>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btnCopiarLimpia">Copiar versión nueva limpia</button>
+          <button type="button" class="btn btn-secondary" id="btnImprimir">Imprimir comparación</button>
+          <button type="button" class="btn btn-coral" id="btnDescargarHtml">Descargar comparación</button>
+        </div>
+      </div>
+      <div class="status-toast" id="mensajeEstado" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card" id="seccionResultados">
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-label">Palabras agregadas</span>
+          <span class="stat-value" id="statAgregadas">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Palabras eliminadas</span>
+          <span class="stat-value" id="statEliminadas">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Palabras sin cambios</span>
+          <span class="stat-value" id="statSinCambios">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Similitud</span>
+          <span class="stat-value" id="statSimilitud">0,00%</span>
+        </div>
+      </div>
+
+      <div class="result-toolbar no-print">
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btnVistaUnificada">Vista: Unificada</button>
+          <button type="button" class="btn btn-secondary" id="btnVistaLado">Vista: Lado a lado</button>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-secondary" id="btnAnterior">Cambio anterior</button>
+          <button type="button" class="btn btn-secondary" id="btnSiguiente">Cambio siguiente</button>
+          <span id="contadorCambios" style="align-self:center; font-size:0.88rem; color:var(--text-muted); font-weight:600;">0 cambios</span>
+        </div>
+      </div>
+
+      <div id="vistaUnificada" class="unified-view"></div>
+
+      <div id="vistaLadoALado" class="side-by-side-view">
+        <div class="side-col" id="colOriginal">
+          <h3>Versión original</h3>
+          <div id="contenidoOriginal"></div>
+        </div>
+        <div class="side-col" id="colNueva">
+          <h3>Versión nueva</h3>
+          <div id="contenidoNuevo"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const EJEMPLO_ORIGINAL =
+      "CLÁUSULA QUINTA (PLAZO Y ALQUILER): El plazo de locación de la vivienda ubicada en calle San Martín 450 será de 24 meses, a partir del 01/03/2026. El canon locativo mensual se fija en $ 450.000,00 pagaderos del 1 al 10 de cada mes.";
+
+    const EJEMPLO_NUEVO =
+      "CLÁUSULA QUINTA (PLAZO Y ALQUILER): El plazo de locación de la vivienda ubicada en calle San Martín 450 será de 36 meses, a partir del 01/04/2026. El canon locativo mensual se fija en $ 520.000,00 pagaderos del 1 al 5 de cada mes, con actualización trimestral según índice pactado.";
+
+    const elOrig = document.getElementById("textoOriginal");
+    const elNuevo = document.getElementById("textoNuevo");
+    const errOrig = document.getElementById("errorOriginal");
+    const errNuevo = document.getElementById("errorNuevo");
+    const cntOrig = document.getElementById("contadorOriginal");
+    const cntNuevo = document.getElementById("contadorNuevo");
+    const nivelSel = document.getElementById("nivelComparacion");
+    const chkMayus = document.getElementById("ignorarMayusculas");
+    const chkEspacios = document.getElementById("ignorarEspacios");
+    const chkPuntuacion = document.getElementById("ignorarPuntuacion");
+    const toast = document.getElementById("mensajeEstado");
+
+    const vistaUnificada = document.getElementById("vistaUnificada");
+    const vistaLado = document.getElementById("vistaLadoALado");
+    const contenidoOriginal = document.getElementById("contenidoOriginal");
+    const contenidoNuevo = document.getElementById("contenidoNuevo");
+    const colOriginal = document.getElementById("colOriginal");
+    const colNueva = document.getElementById("colNueva");
+    const contadorCambios = document.getElementById("contadorCambios");
+
+    let indiceCambioActual = -1;
+    let vistaActual = "unificada";
+
+    function contarPalabras(texto) {
+      const limpio = texto.trim();
+      if (!limpio) return 0;
+      return limpio.split(/\s+/).length;
+    }
+
+    function actualizarContadores() {
+      const wOrig = contarPalabras(elOrig.value);
+      const wNuevo = contarPalabras(elNuevo.value);
+      cntOrig.textContent = `${wOrig.toLocaleString("es-AR")} ${wOrig === 1 ? "palabra" : "palabras"}`;
+      cntNuevo.textContent = `${wNuevo.toLocaleString("es-AR")} ${wNuevo === 1 ? "palabra" : "palabras"}`;
+    }
+
+    function escaparHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function prepararTexto(texto) {
+      let res = texto;
+      if (chkEspacios.checked) {
+        res = res.replace(/\s+/g, " ").trim();
+      }
+      if (chkPuntuacion.checked) {
+        res = res.replace(/[.,;:!?¿¡"()[\]{}«»—–-]/g, "");
+      }
+      if (chkMayus.checked) {
+        res = res.toLowerCase();
+      }
+      return res;
+    }
+
+    function limpiarErrores() {
+      errOrig.textContent = "";
+      errNuevo.textContent = "";
+      toast.textContent = "";
+    }
+
+    function validarEntradas() {
+      limpiarErrores();
+      let valido = true;
+
+      if (!elOrig.value.trim()) {
+        errOrig.textContent = "Ingresá o cargá la versión original antes de comparar.";
+        valido = false;
+      }
+      if (!elNuevo.value.trim()) {
+        errNuevo.textContent = "Ingresá o cargá la versión nueva antes de comparar.";
+        valido = false;
+      }
+      if (!valido) return false;
+
+      if (prepararTexto(elOrig.value) === prepararTexto(elNuevo.value)) {
+        errNuevo.textContent = "Ambas versiones son idénticas con los criterios elegidos.";
+        return false;
+      }
+      return true;
+    }
+
+    function calcularCambios(a, b, nivel) {
+      if (nivel === "lines") {
+        return Diff.diffLines(a, b);
+      }
+      if (nivel === "sentences") {
+        return Diff.diffSentences(a, b);
+      }
+      return Diff.diffWordsWithSpace(a, b);
+    }
+
+    function calcularEstadisticas(partes) {
+      let agregadas = 0;
+      let eliminadas = 0;
+      let sinCambios = 0;
+
+      partes.forEach((parte) => {
+        const cant = contarPalabras(parte.value);
+        if (parte.added) {
+          agregadas += cant;
+        } else if (parte.removed) {
+          eliminadas += cant;
+        } else {
+          sinCambios += cant;
+        }
+      });
+
+      const totalBase = sinCambios + eliminadas;
+      const similitud = totalBase > 0 ? (sinCambios / totalBase) * 100 : 100;
+      const similitudFormateada = `${similitud.toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}%`;
+
+      document.getElementById("statAgregadas").textContent = agregadas.toLocaleString("es-AR");
+      document.getElementById("statEliminadas").textContent = eliminadas.toLocaleString("es-AR");
+      document.getElementById("statSinCambios").textContent = sinCambios.toLocaleString("es-AR");
+      document.getElementById("statSimilitud").textContent = similitudFormateada;
+    }
+
+    function renderizarDiff() {
+      if (!validarEntradas()) return;
+
+      const a = prepararTexto(elOrig.value);
+      const b = prepararTexto(elNuevo.value);
+      const nivel = nivelSel.value;
+      const partes = calcularCambios(a, b, nivel);
+
+      calcularEstadisticas(partes);
+
+      let htmlUnificado = "";
+      let htmlOrig = "";
+      let htmlNuevo = "";
+      let idxCambio = 0;
+
+      for (let i = 0; i < partes.length; i++) {
+        const actual = partes[i];
+        const siguiente = partes[i + 1];
+
+        // Reemplazo: eliminado seguido inmediatamente de agregado
+        if (actual.removed && siguiente && siguiente.added) {
+          const idAttr = `data-change-idx="${idxCambio}"`;
+          htmlUnificado +=
+            `<span class="diff-removed change-marker" ${idAttr}>${escaparHtml(actual.value)}</span> ` +
+            `<span class="diff-added change-marker" ${idAttr}>${escaparHtml(siguiente.value)}</span>`;
+          htmlOrig += `<span class="diff-removed change-marker" ${idAttr}>${escaparHtml(actual.value)}</span>`;
+          htmlNuevo += `<span class="diff-added change-marker" ${idAttr}>${escaparHtml(siguiente.value)}</span>`;
+          idxCambio++;
+          i++;
+        } else if (actual.removed) {
+          const idAttr = `data-change-idx="${idxCambio}"`;
+          htmlUnificado += `<span class="diff-removed change-marker" ${idAttr}>${escaparHtml(actual.value)}</span>`;
+          htmlOrig += `<span class="diff-removed change-marker" ${idAttr}>${escaparHtml(actual.value)}</span>`;
+          idxCambio++;
+        } else if (actual.added) {
+          const idAttr = `data-change-idx="${idxCambio}"`;
+          htmlUnificado += `<span class="diff-added change-marker" ${idAttr}>${escaparHtml(actual.value)}</span>`;
+          htmlNuevo += `<span class="diff-added change-marker" ${idAttr}>${escaparHtml(actual.value)}</span>`;
+          idxCambio++;
+        } else {
+          const safe = escaparHtml(actual.value);
+          htmlUnificado += safe;
+          htmlOrig += safe;
+          htmlNuevo += safe;
+        }
+      }
+
+      vistaUnificada.innerHTML = htmlUnificado;
+      contenidoOriginal.innerHTML = htmlOrig;
+      contenidoNuevo.innerHTML = htmlNuevo;
+
+      indiceCambioActual = idxCambio > 0 ? 0 : -1;
+      actualizarResaltadoCambio();
+    }
+
+    function actualizarResaltadoCambio() {
+      const todos = document.querySelectorAll(".change-marker");
+      todos.forEach((el) => el.classList.remove("diff-active"));
+
+      const totalCambios = vistaUnificada.querySelectorAll(".change-marker").length;
+      if (totalCambios === 0 || indiceCambioActual < 0) {
+        contadorCambios.textContent = "0 cambios";
+        return;
+      }
+
+      const activos = document.querySelectorAll(`[data-change-idx="${indiceCambioActual}"]`);
+      activos.forEach((el) => el.classList.add("diff-active"));
+      if (activos[0]) {
+        activos[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      contadorCambios.textContent = `Cambio ${indiceCambioActual + 1} de ${totalCambios}`;
+    }
+
+    function navegarCambio(direccion) {
+      const totalCambios = vistaUnificada.querySelectorAll(".change-marker").length;
+      if (totalCambios === 0) return;
+      if (indiceCambioActual < 0) {
+        indiceCambioActual = 0;
+      } else {
+        indiceCambioActual = (indiceCambioActual + direccion + totalCambios) % totalCambios;
+      }
+      actualizarResaltadoCambio();
+    }
+
+    function setVista(modo) {
+      vistaActual = modo;
+      if (modo === "unificada") {
+        vistaUnificada.style.display = "block";
+        vistaLado.style.display = "none";
+      } else {
+        vistaUnificada.style.display = "none";
+        vistaLado.style.display = "grid";
+      }
+      actualizarResaltadoCambio();
+    }
+
+    // Desplazamiento sincronizado en vista lado a lado
+    let sincronizandoScroll = false;
+    colOriginal.addEventListener("scroll", () => {
+      if (sincronizandoScroll) return;
+      sincronizandoScroll = true;
+      colNueva.scrollTop = colOriginal.scrollTop;
+      sincronizandoScroll = false;
+    });
+    colNueva.addEventListener("scroll", () => {
+      if (sincronizandoScroll) return;
+      sincronizandoScroll = true;
+      colOriginal.scrollTop = colNueva.scrollTop;
+      sincronizandoScroll = false;
+    });
+
+    async function leerArchivo(file, destinoTextarea, errorEl) {
+      errorEl.textContent = "";
+      if (!file) return;
+
+      const nombre = file.name.toLowerCase();
+      try {
+        if (nombre.endsWith(".txt")) {
+          destinoTextarea.value = await file.text();
+        } else if (nombre.endsWith(".docx")) {
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          destinoTextarea.value = result.value;
+        } else {
+          errorEl.textContent = "Seleccioná un archivo .txt o .docx.";
+          return;
+        }
+        actualizarContadores();
+        renderizarDiff();
+      } catch (e) {
+        errorEl.textContent = "No se pudo leer el archivo seleccionado.";
+      }
+    }
+
+    document.getElementById("archivoOriginal").addEventListener("change", (e) => {
+      leerArchivo(e.target.files[0], elOrig, errOrig);
+      e.target.value = "";
+    });
+
+    document.getElementById("archivoNuevo").addEventListener("change", (e) => {
+      leerArchivo(e.target.files[0], elNuevo, errNuevo);
+      e.target.value = "";
+    });
+
+    elOrig.addEventListener("input", actualizarContadores);
+    elNuevo.addEventListener("input", actualizarContadores);
+
+    document.getElementById("btnComparar").addEventListener("click", renderizarDiff);
+
+    document.getElementById("btnIntercambiar").addEventListener("click", () => {
+      const temp = elOrig.value;
+      elOrig.value = elNuevo.value;
+      elNuevo.value = temp;
+      actualizarContadores();
+      renderizarDiff();
+    });
+
+    document.getElementById("btnCargarEjemplo").addEventListener("click", () => {
+      elOrig.value = EJEMPLO_ORIGINAL;
+      elNuevo.value = EJEMPLO_NUEVO;
+      actualizarContadores();
+      renderizarDiff();
+      toast.textContent = "Ejemplo cargado.";
+    });
+
+    document.getElementById("btnVistaUnificada").addEventListener("click", () => setVista("unificada"));
+    document.getElementById("btnVistaLado").addEventListener("click", () => setVista("lado"));
+    document.getElementById("btnAnterior").addEventListener("click", () => navegarCambio(-1));
+    document.getElementById("btnSiguiente").addEventListener("click", () => navegarCambio(1));
+
+    document.getElementById("btnCopiarLimpia").addEventListener("click", async () => {
+      if (!elNuevo.value.trim()) {
+        errNuevo.textContent = "No hay versión nueva para copiar.";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(elNuevo.value);
+        toast.textContent = "Versión nueva limpia copiada al portapapeles.";
+      } catch {
+        toast.textContent = "Seleccioná y copiá el texto desde el cuadro de Versión nueva.";
+      }
+    });
+
+    document.getElementById("btnImprimir").addEventListener("click", () => {
+      window.print();
+    });
+
+    document.getElementById("btnDescargarHtml").addEventListener("click", () => {
+      const contenido = `<!DOCTYPE html><html lang="es-AR"><head><meta charset="UTF-8"><title>Comparación de textos</title><style>body{font-family:system-ui,sans-serif;padding:2rem;line-height:1.6;color:#172a2c}.diff-added{background:#dcfce7;color:#14532d;padding:2px 4px;border-radius:4px}.diff-removed{background:#fee2e2;color:#7f1d1d;text-decoration:line-through;padding:2px 4px;border-radius:4px}.box{white-space:pre-wrap;border:1px solid #cbd5e1;padding:1rem;border-radius:8px}</style></head><body><h1>Comparación de textos</h1><div class="box">${vistaUnificada.innerHTML}</div></body></html>`;
+      const blob = new Blob([contenido], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "comparacion-textos.html";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.textContent = "Comparación descargada como comparacion-textos.html.";
+    });
+
+    // Precarga inicial con ejemplo
+    elOrig.value = EJEMPLO_ORIGINAL;
+    elNuevo.value = EJEMPLO_NUEVO;
+    actualizarContadores();
+    renderizarDiff();
+  </script>
+</body>
+</html>
