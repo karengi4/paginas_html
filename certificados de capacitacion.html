@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificados en un clic — Generador de certificados en PDF</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-page: #f2f9f8;
+      --bg-card: #ffffff;
+      --bg-soft: #e6f6f4;
+      --bg-coral-soft: #fff1ed;
+      --aqua-dark: #0f5c59;
+      --aqua: #14827d;
+      --coral: #e06d53;
+      --coral-hover: #c9573e;
+      --text-main: #172a2c;
+      --text-muted: #4b6366;
+      --border: #c6e6e2;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 1.4rem 1rem 3rem;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    header.app-header {
+      background: linear-gradient(135deg, var(--aqua-dark) 0%, var(--aqua) 65%, var(--coral) 130%);
+      color: #ffffff;
+      padding: 1.65rem 2rem;
+      border-radius: var(--radius);
+    }
+
+    header.app-header h1 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      margin-bottom: 0.3rem;
+    }
+
+    header.app-header p {
+      color: #ecfdf5;
+      font-size: 0.96rem;
+      max-width: 880px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 460px minmax(0, 1fr);
+      gap: 1.35rem;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.45rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--aqua-dark);
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .full-span {
+      grid-column: 1 / -1;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.55rem 0.72rem;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      background: #fbfffe;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 38px;
+      padding: 2px 4px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid var(--aqua);
+      border-color: var(--aqua);
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .error-msg {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #b91c1c;
+      margin-top: 0.28rem;
+      min-height: 1.1rem;
+    }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-mini {
+      background: var(--bg-soft);
+      color: var(--aqua-dark);
+      border: 1px solid var(--border);
+      padding: 0.38rem 0.68rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-mini:hover {
+      background: #d2eeea;
+    }
+
+    .signer-box {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .signer-box h4 {
+      font-size: 0.86rem;
+      color: var(--aqua-dark);
+    }
+
+    .signer-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+    }
+
+    .check-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.86rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Panel derecho: vista previa A4 apaisado */
+    .preview-sticky {
+      position: sticky;
+      top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .counter-pill {
+      background: var(--bg-soft);
+      color: var(--aqua-dark);
+      border: 1px solid var(--border);
+      padding: 0.32rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .a4-wrapper {
+      width: 100%;
+      background: #dce8e6;
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .cert-sheet {
+      width: 100%;
+      aspect-ratio: 297 / 210;
+      background: #ffffff;
+      color: #1e293b;
+      position: relative;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
+      padding: 5.5% 6.5%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* Plantilla 1: Moderno */
+    .cert-sheet.tpl-moderno {
+      font-family: "Inter", sans-serif;
+    }
+    .cert-sheet.tpl-moderno .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: var(--cert-color, #14827d);
+    }
+    .cert-sheet.tpl-moderno .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: var(--cert-color, #14827d);
+      opacity: 0.8;
+    }
+
+    /* Plantilla 2: Clásico */
+    .cert-sheet.tpl-clasico {
+      font-family: "Playfair Display", Georgia, serif;
+      border: 10px double var(--cert-color, #14827d);
+      margin: 4px;
+    }
+
+    /* Plantilla 3: Minimalista */
+    .cert-sheet.tpl-minimalista {
+      font-family: "Inter", sans-serif;
+      border-left: 16px solid var(--cert-color, #14827d);
+      text-align: left;
+    }
+    .cert-sheet.tpl-minimalista .cert-header,
+    .cert-sheet.tpl-minimalista .cert-body,
+    .cert-sheet.tpl-minimalista .cert-footer {
+      align-items: flex-start;
+      text-align: left;
+    }
+    .cert-sheet.tpl-minimalista .signers-grid {
+      text-align: center;
+    }
+
+    .cert-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .cert-logo {
+      max-height: 52px;
+      max-width: 190px;
+      object-fit: contain;
+      margin-bottom: 0.15rem;
+    }
+
+    .cert-org {
+      font-size: clamp(0.72rem, 1.1vw, 0.92rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cert-color, #14827d);
+    }
+
+    .cert-title {
+      font-size: clamp(1.2rem, 2.3vw, 2rem);
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+    }
+
+    .cert-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 0.4rem 0;
+    }
+
+    .cert-intro {
+      font-size: clamp(0.74rem, 1.05vw, 0.92rem);
+      color: #475569;
+    }
+
+    .cert-recipient {
+      font-size: clamp(1.25rem, 2.5vw, 2.15rem);
+      font-weight: 700;
+      color: var(--cert-color, #14827d);
+      white-space: nowrap;
+      max-width: 100%;
+      line-height: 1.15;
+    }
+
+    .cert-dni {
+      font-size: clamp(0.72rem, 1vw, 0.88rem);
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .cert-text {
+      font-size: clamp(0.74rem, 1.08vw, 0.94rem);
+      color: #1e293b;
+      max-width: 88%;
+      line-height: 1.5;
+    }
+
+    .cert-place-date {
+      font-size: clamp(0.7rem, 0.98vw, 0.86rem);
+      color: #475569;
+      margin-top: 0.25rem;
+    }
+
+    .cert-footer {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .signers-grid {
+      width: 100%;
+      display: grid;
+      gap: 1.2rem;
+      align-items: end;
+      margin-top: 0.3rem;
+    }
+
+    .signer-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: "Inter", sans-serif;
+    }
+
+    .signer-img {
+      height: 36px;
+      max-width: 130px;
+      object-fit: contain;
+      margin-bottom: 2px;
+    }
+
+    .signer-spacer {
+      height: 36px;
+    }
+
+    .signer-line {
+      width: 82%;
+      border-top: 1px solid #334155;
+      margin-bottom: 4px;
+    }
+
+    .signer-name {
+      font-size: clamp(0.68rem, 0.92vw, 0.82rem);
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .signer-role {
+      font-size: clamp(0.62rem, 0.82vw, 0.74rem);
+      color: #334155;
+    }
+
+    .signer-area {
+      font-size: clamp(0.6rem, 0.78vw, 0.7rem);
+      color: #64748b;
+    }
+
+    .verify-code {
+      position: absolute;
+      bottom: 12px;
+      right: 18px;
+      font-family: "Inter", monospace;
+      font-size: 0.66rem;
+      color: #64748b;
+    }
+
+    .download-bar {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    button.btn {
+      padding: 0.62rem 1.05rem;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s ease, transform 0.12s ease;
+    }
+
+    button.btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--aqua-dark);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--aqua);
+    }
+
+    .btn-coral {
+      background: var(--coral);
+      color: #ffffff;
+    }
+
+    .btn-coral:hover {
+      background: var(--coral-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-soft);
+      color: var(--aqua-dark);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #d2eeea;
+    }
+
+    .status-toast {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--aqua-dark);
+      min-height: 1.25rem;
+    }
+
+    @media (max-width: 1020px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-sticky {
+        position: static;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .form-grid,
+      .signer-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <h1>Certificados en un clic</h1>
+      <p>Generador de certificados en PDF (A4 apaisado) para cursos, jornadas y capacitaciones — listo para firma digital o impresa, sin guardar datos al cerrar.</p>
+    </header>
+
+    <div class="workspace">
+      <!-- PANEL IZQUIERDO: FORMULARIO -->
+      <section class="card">
+        <div class="section-title">1. Diseño y tipo de certificado</div>
+        <div class="form-grid">
+          <div>
+            <label class="field-label" for="plantilla">Plantilla de diseño</label>
+            <select id="plantilla">
+              <option value="moderno" selected>Moderno (bloques de color, sans serif)</option>
+              <option value="clasico">Clásico (borde ornamental, serif)</option>
+              <option value="minimalista">Minimalista (fondo blanco, línea de color)</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="colorPrincipal">Color principal</label>
+            <input type="color" id="colorPrincipal" value="#14827d" />
+          </div>
+          <div>
+            <label class="field-label" for="tipoCertificado">Tipo de certificado</label>
+            <select id="tipoCertificado">
+              <option value="asistencia" selected>De asistencia</option>
+              <option value="aprobacion">De aprobación</option>
+              <option value="participacion">De participación</option>
+              <option value="reconocimiento">De reconocimiento</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="logoInput">Logo institucional (opcional, máx. 2 MB)</label>
+            <div class="file-row">
+              <label class="btn-mini" for="logoInput">Subir PNG / JPG</label>
+              <button type="button" class="btn-mini" id="btnQuitarLogo" hidden>Quitar</button>
+              <input type="file" id="logoInput" accept="image/png,image/jpeg" hidden />
+            </div>
+            <div class="error-msg" id="errorLogo" role="alert"></div>
+          </div>
+        </div>
+
+        <div class="section-title">2. Datos del curso o evento</div>
+        <div class="form-grid">
+          <div class="full-span">
+            <label class="field-label" for="nombreCurso">Nombre del curso o evento *</label>
+            <input type="text" id="nombreCurso" value="Introducción a la IA" />
+            <div class="error-msg" id="errorCurso" role="alert"></div>
+          </div>
+          <div>
+            <label class="field-label" for="organizacion">Organización / Área</label>
+            <input type="text" id="organizacion" value="Área de Capacitación y Desarrollo" />
+          </div>
+          <div>
+            <label class="field-label" for="fecha">Fecha (dd/mm/aaaa)</label>
+            <input type="text" id="fecha" value="19/11/2026" placeholder="dd/mm/aaaa" />
+          </div>
+          <div>
+            <label class="field-label" for="horas">Carga horaria (opcional)</label>
+            <input type="text" id="horas" value="12" placeholder="Ej. 12" />
+          </div>
+          <div>
+            <label class="field-label" for="lugar">Lugar (opcional)</label>
+            <input type="text" id="lugar" value="Viedma, Río Negro" />
+          </div>
+          <div class="full-span">
+            <label class="field-label" for="textoCuerpo">Texto del cuerpo (editable)</label>
+            <textarea id="textoCuerpo" rows="3">Se certifica que {nombre} asistió al curso {curso}, con una carga horaria de {horas} horas.</textarea>
+            <div class="hint">Variables disponibles: <strong>{nombre}</strong>, <strong>{curso}</strong> y <strong>{horas}</strong>.</div>
+          </div>
+        </div>
+
+        <div class="section-title">3. Autoridades firmantes (1, 2 o 3 espacios)</div>
+        <div class="form-grid">
+          <div class="full-span">
+            <label class="field-label" for="cantidadFirmantes">Cantidad de espacios de firma</label>
+            <select id="cantidadFirmantes">
+              <option value="1">1 firmante</option>
+              <option value="2" selected>2 firmantes</option>
+              <option value="3">3 firmantes</option>
+            </select>
+            <div class="hint">Podés completar los datos de cada autoridad o dejar espacios listos para firmar luego.</div>
+          </div>
+        </div>
+        <div id="contenedorFirmantes"></div>
+
+        <div class="section-title">4. Lista de participantes</div>
+        <div class="form-grid">
+          <div class="full-span">
+            <label class="field-label" for="listaParticipantes">Participantes (un nombre por línea, o Nombre y DNI pegados desde Excel) *</label>
+            <textarea id="listaParticipantes" rows="5">María Fernanda Gómez	32.450.118
+Juan Ignacio Pérez	35.890.412
+Lucía Belén Rodríguez	38.120.905</textarea>
+            <div class="hint" id="resumenParticipantes">3 participantes detectados</div>
+            <div class="error-msg" id="errorParticipantes" role="alert"></div>
+          </div>
+          <div class="full-span">
+            <label class="check-inline">
+              <input type="checkbox" id="incluirCodigo" checked />
+              Incluir código de verificación corto en la esquina inferior (ej. CERT-2026-0001)
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANEL DERECHO: VISTA PREVIA Y DESCARGAS -->
+      <section class="card preview-sticky">
+        <div class="preview-toolbar">
+          <div class="nav-pills">
+            <button type="button" class="btn btn-secondary" id="btnPrevCert">← Anterior</button>
+            <span class="counter-pill" id="indicadorVista">1 de 3</span>
+            <button type="button" class="btn btn-secondary" id="btnNextCert">Siguiente →</button>
+          </div>
+          <span class="hint">Vista previa A4 apaisado en vivo</span>
+        </div>
+
+        <div class="a4-wrapper">
+          <div class="cert-sheet tpl-moderno" id="certPreview">
+            <div class="top-bar" id="topBar"></div>
+            <div class="bottom-bar" id="bottomBar"></div>
+
+            <div class="cert-header">
+              <img id="prevLogo" class="cert-logo" alt="Logo institucional" hidden />
+              <div class="cert-org" id="prevOrg">Área de Capacitación y Desarrollo</div>
+              <div class="cert-title" id="prevTitle">CERTIFICADO DE ASISTENCIA</div>
+            </div>
+
+            <div class="cert-body">
+              <div class="cert-intro">Se otorga el presente certificado a</div>
+              <div class="cert-recipient" id="prevNombre">María Fernanda Gómez</div>
+              <div class="cert-dni" id="prevDni">DNI 32.450.118</div>
+              <div class="cert-text" id="prevTexto"></div>
+              <div class="cert-place-date" id="prevLugarFecha"></div>
+            </div>
+
+            <div class="cert-footer">
+              <div class="signers-grid" id="prevFirmantes"></div>
+            </div>
+
+            <div class="verify-code" id="prevCodigo">CERT-2026-0001</div>
+          </div>
+        </div>
+
+        <div class="download-bar">
+          <button type="button" class="btn btn-primary" id="btnDescargarUno">Descargar este certificado (PDF)</button>
+          <button type="button" class="btn btn-secondary" id="btnDescargarTodos">Descargar todos (1 PDF)</button>
+          <button type="button" class="btn btn-coral" id="btnDescargarZip">Descargar ZIP (1 PDF por persona)</button>
+        </div>
+        <div class="status-toast" id="mensajeEstado" role="status" aria-live="polite"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const TEXTOS_SUGERIDOS = {
+      asistencia: {
+        titulo: "CERTIFICADO DE ASISTENCIA",
+        cuerpo: "Se certifica que {nombre} asistió al curso {curso}, con una carga horaria de {horas} horas."
+      },
+      aprobacion: {
+        titulo: "CERTIFICADO DE APROBACIÓN",
+        cuerpo: "Se certifica que {nombre} cursó y aprobó {curso}, con una carga horaria de {horas} horas."
+      },
+      participacion: {
+        titulo: "CERTIFICADO DE PARTICIPACIÓN",
+        cuerpo: "Se certifica que {nombre} participó activamente en {curso}, con una carga horaria de {horas} horas."
+      },
+      reconocimiento: {
+        titulo: "CERTIFICADO DE RECONOCIMIENTO",
+        cuerpo: "Se otorga el presente reconocimiento a {nombre} por su valioso aporte en {curso}."
+      }
+    };
+
+    const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+    const state = {
+      logoDataUrl: null,
+      indiceActual: 0,
+      firmantes: [
+        { nombre: "Nombre y Apellido", cargo: "Coordinación de Capacitación", area: "Dirección de Recursos Humanos", firmaDataUrl: null },
+        { nombre: "Nombre y Apellido", cargo: "Autoridad Institucional", area: "Secretaría / Dirección General", firmaDataUrl: null },
+        { nombre: "Nombre y Apellido", cargo: "Docente / Capacitador/a", area: "Equipo Académico", firmaDataUrl: null }
+      ]
+    };
+
+    const elPlantilla = document.getElementById("plantilla");
+    const elColor = document.getElementById("colorPrincipal");
+    const elTipo = document.getElementById("tipoCertificado");
+    const elCurso = document.getElementById("nombreCurso");
+    const elOrg = document.getElementById("organizacion");
+    const elFecha = document.getElementById("fecha");
+    const elHoras = document.getElementById("horas");
+    const elLugar = document.getElementById("lugar");
+    const elCuerpo = document.getElementById("textoCuerpo");
+    const elCantFirmantes = document.getElementById("cantidadFirmantes");
+    const contFirmantes = document.getElementById("contenedorFirmantes");
+    const elLista = document.getElementById("listaParticipantes");
+    const elCodigo = document.getElementById("incluirCodigo");
+
+    const errLogo = document.getElementById("errorLogo");
+    const errCurso = document.getElementById("errorCurso");
+    const errPart = document.getElementById("errorParticipantes");
+    const toast = document.getElementById("mensajeEstado");
+
+    function limpiarEspacios(txt) {
+      return txt.replace(/\s+/g, " ").trim();
+    }
+
+    function parsearParticipantes() {
+      const lineas = elLista.value.split(/\r?\n/);
+      const lista = [];
+
+      lineas.forEach((lineaRaw) => {
+        const limpia = lineaRaw.trim();
+        if (!limpia) return;
+
+        let nombre = "";
+        let dni = "";
+
+        if (limpia.includes("\t")) {
+          const cols = limpia.split("\t").map((c) => limpiarEspacios(c));
+          nombre = cols[0] || "";
+          dni = cols[1] || "";
+        } else if (limpia.includes(";") || limpia.includes(",")) {
+          const cols = limpia.split(/[;,]/).map((c) => limpiarEspacios(c));
+          nombre = cols[0] || "";
+          dni = cols[1] || "";
+        } else {
+          const matchDni = limpia.match(/^(.*?)\s+((?:\d{1,2}\.?\d{3}\.?\d{3})|\d{7,8})$/);
+          if (matchDni) {
+            nombre = limpiarEspacios(matchDni[1]);
+            dni = limpiarEspacios(matchDni[2]);
+          } else {
+            nombre = limpiarEspacios(limpia);
+          }
+        }
+
+        if (nombre) {
+          lista.push({ nombre, dni });
+        }
+      });
+
+      return lista;
+    }
+
+    function formatearTextoCuerpo(participante) {
+      const curso = limpiarEspacios(elCurso.value) || "[Nombre del curso]";
+      const horas = limpiarEspacios(elHoras.value);
+      let texto = elCuerpo.value;
+
+      texto = texto.replaceAll("{nombre}", participante.nombre);
+      texto = texto.replaceAll("{curso}", curso);
+      if (horas) {
+        texto = texto.replaceAll("{horas}", horas);
+      } else {
+        texto = texto.replace(/,?\s*con una carga horaria de \{horas\} horas\.?/gi, ".");
+        texto = texto.replaceAll("{horas}", "");
+      }
+      return texto;
+    }
+
+    function generarCodigoVerificacion(idx) {
+      const anio = new Date().getFullYear();
+      const num = String(idx + 1).padStart(4, "0");
+      return `CERT-${anio}-${num}`;
+    }
+
+    function construirLugarFecha() {
+      const lugar = limpiarEspacios(elLugar.value);
+      const fecha = limpiarEspacios(elFecha.value);
+      if (lugar && fecha) return `${lugar}, ${fecha}`;
+      return lugar || fecha || "";
+    }
+
+    function renderizarInputsFirmantes() {
+      const cant = Number(elCantFirmantes.value);
+      contFirmantes.innerHTML = "";
+
+      for (let i = 0; i < cant; i++) {
+        const f = state.firmantes[i];
+        const box = document.createElement("div");
+        box.className = "signer-box";
+        box.innerHTML = `
+          <h4>Firmante ${i + 1}</h4>
+          <div class="signer-row">
+            <div>
+              <label class="field-label">Nombre y apellido</label>
+              <input type="text" data-idx="${i}" data-field="nombre" value="${f.nombre.replaceAll('"', "&quot;")}" placeholder="Ej. Lic. Ana Pérez (o dejar vacío)" />
+            </div>
+            <div>
+              <label class="field-label">Cargo</label>
+              <input type="text" data-idx="${i}" data-field="cargo" value="${f.cargo.replaceAll('"', "&quot;")}" placeholder="Ej. Directora de RR. HH." />
+            </div>
+          </div>
+          <div class="signer-row">
+            <div>
+              <label class="field-label">Institución / Área</label>
+              <input type="text" data-idx="${i}" data-field="area" value="${f.area.replaceAll('"', "&quot;")}" placeholder="Ej. Universidad Nacional de Río Negro" />
+            </div>
+            <div>
+              <label class="field-label">Firma digitalizada (opcional, máx. 2 MB)</label>
+              <div class="file-row">
+                <label class="btn-mini">
+                  Subir PNG / JPG
+                  <input type="file" accept="image/png,image/jpeg" data-sign-idx="${i}" hidden />
+                </label>
+                ${f.firmaDataUrl ? `<button type="button" class="btn-mini" data-clear-sign="${i}">Quitar</button>` : ""}
+              </div>
+              <div class="error-msg" id="errFirma${i}"></div>
+            </div>
+          </div>
+        `;
+        contFirmantes.appendChild(box);
+      }
+
+      contFirmantes.querySelectorAll("input[type='text']").forEach((inp) => {
+        inp.addEventListener("input", (e) => {
+          const idx = Number(e.target.dataset.idx);
+          const field = e.target.dataset.field;
+          state.firmantes[idx][field] = e.target.value;
+          actualizarVistaPrevia();
+        });
+      });
+
+      contFirmantes.querySelectorAll("input[type='file']").forEach((inp) => {
+        inp.addEventListener("change", (e) => {
+          const idx = Number(e.target.dataset.signIdx);
+          const file = e.target.files[0];
+          const errEl = document.getElementById(`errFirma${idx}`);
+          errEl.textContent = "";
+          if (!file) return;
+          if (file.size > MAX_FILE_BYTES) {
+            errEl.textContent = "La imagen de firma supera los 2 MB.";
+            e.target.value = "";
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            state.firmantes[idx].firmaDataUrl = reader.result;
+            renderizarInputsFirmantes();
+            actualizarVistaPrevia();
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      contFirmantes.querySelectorAll("[data-clear-sign]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const idx = Number(e.target.dataset.clearSign);
+          state.firmantes[idx].firmaDataUrl = null;
+          renderizarInputsFirmantes();
+          actualizarVistaPrevia();
+        });
+      });
+    }
+
+    function ajustarTamanoNombre(elNombre) {
+      const len = elNombre.textContent.length;
+      if (len > 36) {
+        elNombre.style.fontSize = "clamp(0.92rem, 1.55vw, 1.35rem)";
+      } else if (len > 26) {
+        elNombre.style.fontSize = "clamp(1.08rem, 1.9vw, 1.68rem)";
+      } else {
+        elNombre.style.fontSize = "clamp(1.25rem, 2.5vw, 2.15rem)";
+      }
+    }
+
+    function actualizarVistaPrevia() {
+      const participantes = parsearParticipantes();
+      const total = participantes.length;
+
+      document.getElementById("resumenParticipantes").textContent =
+        `${total.toLocaleString("es-AR")} ${total === 1 ? "participante detectado" : "participantes detectados"}`;
+
+      if (state.indiceActual >= total) {
+        state.indiceActual = Math.max(0, total - 1);
+      }
+
+      document.getElementById("indicadorVista").textContent =
+        total > 0 ? `${state.indiceActual + 1} de ${total}` : "0 de 0";
+
+      const pActual = participantes[state.indiceActual] || {
+        nombre: "Nombre del Participante",
+        dni: ""
+      };
+
+      const sheet = document.getElementById("certPreview");
+      const color = elColor.value;
+      const tpl = elPlantilla.value;
+
+      sheet.className = `cert-sheet tpl-${tpl}`;
+      sheet.style.setProperty("--cert-color", color);
+
+      const showBars = tpl === "moderno";
+      document.getElementById("topBar").style.display = showBars ? "block" : "none";
+      document.getElementById("bottomBar").style.display = showBars ? "block" : "none";
+
+      const logoImg = document.getElementById("prevLogo");
+      if (state.logoDataUrl) {
+        logoImg.src = state.logoDataUrl;
+        logoImg.hidden = false;
+      } else {
+        logoImg.hidden = true;
+      }
+
+      const orgTxt = limpiarEspacios(elOrg.value);
+      const prevOrg = document.getElementById("prevOrg");
+      prevOrg.textContent = orgTxt;
+      prevOrg.style.display = orgTxt ? "block" : "none";
+
+      document.getElementById("prevTitle").textContent = TEXTOS_SUGERIDOS[elTipo.value].titulo;
+
+      const elPrevNombre = document.getElementById("prevNombre");
+      elPrevNombre.textContent = pActual.nombre;
+      ajustarTamanoNombre(elPrevNombre);
+
+      const elPrevDni = document.getElementById("prevDni");
+      if (pActual.dni) {
+        elPrevDni.textContent = `DNI ${pActual.dni}`;
+        elPrevDni.style.display = "block";
+      } else {
+        elPrevDni.style.display = "none";
+      }
+
+      document.getElementById("prevTexto").textContent = formatearTextoCuerpo(pActual);
+      document.getElementById("prevLugarFecha").textContent = construirLugarFecha();
+
+      // Firmantes en vista previa
+      const cant = Number(elCantFirmantes.value);
+      const grid = document.getElementById("prevFirmantes");
+      grid.style.gridTemplateColumns = `repeat(${cant}, minmax(0, 1fr))`;
+      grid.innerHTML = "";
+
+      for (let i = 0; i < cant; i++) {
+        const f = state.firmantes[i];
+        const slot = document.createElement("div");
+        slot.className = "signer-slot";
+        slot.innerHTML = `
+          ${f.firmaDataUrl ? `<img src="${f.firmaDataUrl}" class="signer-img" alt="Firma ${i + 1}" />` : `<div class="signer-spacer"></div>`}
+          <div class="signer-line"></div>
+          <div class="signer-name">${f.nombre ? f.nombre : "&nbsp;"}</div>
+          <div class="signer-role">${f.cargo ? f.cargo : "&nbsp;"}</div>
+          <div class="signer-area">${f.area ? f.area : "&nbsp;"}</div>
+        `;
+        grid.appendChild(slot);
+      }
+
+      const prevCod = document.getElementById("prevCodigo");
+      if (elCodigo.checked) {
+        prevCod.textContent = generarCodigoVerificacion(state.indiceActual);
+        prevCod.style.display = "block";
+      } else {
+        prevCod.style.display = "none";
+      }
+    }
+
+    function validarParaExportar() {
+      errCurso.textContent = "";
+      errPart.textContent = "";
+      toast.textContent = "";
+      let ok = true;
+
+      if (!limpiarEspacios(elCurso.value)) {
+        errCurso.textContent = "Ingresá el nombre del curso o evento antes de descargar.";
+        ok = false;
+      }
+
+      const participantes = parsearParticipantes();
+      if (participantes.length === 0) {
+        errPart.textContent = "Agregá al menos un participante en la lista.";
+        ok = false;
+      }
+
+      return ok ? participantes : null;
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace("#", "");
+      const num = parseInt(clean, 16);
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    function dibujarPaginaPdf(doc, participante, indice) {
+      const W = 297;
+      const H = 210;
+      const tpl = elPlantilla.value;
+      const rgb = hexToRgb(elColor.value);
+      const fontBase = tpl === "clasico" ? "times" : "helvetica";
+
+      // Fondo blanco
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, W, H, "F");
+
+      // Decoración según plantilla
+      if (tpl === "moderno") {
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.rect(0, 0, W, 6, "F");
+        doc.rect(0, H - 4, W, 4, "F");
+      } else if (tpl === "clasico") {
+        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+        doc.setLineWidth(1.4);
+        doc.rect(8, 8, W - 16, H - 16);
+        doc.setLineWidth(0.5);
+        doc.rect(10.5, 10.5, W - 21, H - 21);
+      } else if (tpl === "minimalista") {
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.rect(0, 0, 8, H, "F");
+      }
+
+      const isMin = tpl === "minimalista";
+      const xAlign = isMin ? 22 : W / 2;
+      const alignOpt = isMin ? "left" : "center";
+      let y = 20;
+
+      // Logo institucional
+      if (state.logoDataUrl) {
+        try {
+          const fmt = state.logoDataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+          const logoW = 34;
+          const logoH = 18;
+          const logoX = isMin ? 22 : (W - logoW) / 2;
+          doc.addImage(state.logoDataUrl, fmt, logoX, y - 4, logoW, logoH, undefined, "FAST");
+          y += 20;
+        } catch (e) {
+          // Si falla la imagen, continúa sin bloquear
+        }
+      }
+
+      // Organización
+      const orgTxt = limpiarEspacios(elOrg.value);
+      if (orgTxt) {
+        doc.setFont(fontBase, "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(rgb.r, rgb.g, rgb.b);
+        doc.text(orgTxt.toUpperCase(), xAlign, y, { align: alignOpt });
+        y += 10;
+      }
+
+      // Título certificado
+      doc.setFont(fontBase, "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text(TEXTOS_SUGERIDOS[elTipo.value].titulo, xAlign, y, { align: alignOpt });
+      y += 13;
+
+      // Introducción
+      doc.setFont(fontBase, "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(71, 85, 105);
+      doc.text("Se otorga el presente certificado a", xAlign, y, { align: alignOpt });
+      y += 15;
+
+      // Nombre participante (ajustado para entrar en una línea)
+      doc.setFont(fontBase, "bold");
+      doc.setTextColor(rgb.r, rgb.g, rgb.b);
+      let nameFontSize = 28;
+      doc.setFontSize(nameFontSize);
+      const maxNameWidth = isMin ? W - 44 : W - 40;
+      while (doc.getTextWidth(participante.nombre) > maxNameWidth && nameFontSize > 13) {
+        nameFontSize -= 1;
+        doc.setFontSize(nameFontSize);
+      }
+      doc.text(participante.nombre, xAlign, y, { align: alignOpt });
+      y += 8;
+
+      // DNI si existe
+      if (participante.dni) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(51, 65, 85);
+        doc.text(`DNI ${participante.dni}`, xAlign, y, { align: alignOpt });
+        y += 10;
+      } else {
+        y += 4;
+      }
+
+      // Cuerpo
+      doc.setFont(fontBase, "normal");
+      doc.setFontSize(12.5);
+      doc.setTextColor(30, 41, 59);
+      const cuerpo = formatearTextoCuerpo(participante);
+      const maxBodyW = isMin ? W - 46 : W - 56;
+      const lineasCuerpo = doc.splitTextToSize(cuerpo, maxBodyW);
+      doc.text(lineasCuerpo, xAlign, y, { align: alignOpt, lineHeightFactor: 1.45 });
+      y += lineasCuerpo.length * 6.5 + 6;
+
+      // Lugar y fecha
+      const lf = construirLugarFecha();
+      if (lf) {
+        doc.setFont(fontBase, "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(71, 85, 105);
+        doc.text(lf, xAlign, y, { align: alignOpt });
+      }
+
+      // Firmantes (1, 2 o 3)
+      const cant = Number(elCantFirmantes.value);
+      const marginX = isMin ? 22 : 24;
+      const usableW = W - marginX * 2;
+      const colW = usableW / cant;
+      const lineY = 174;
+
+      for (let i = 0; i < cant; i++) {
+        const f = state.firmantes[i];
+        const centerX = marginX + colW * i + colW / 2;
+
+        if (f.firmaDataUrl) {
+          try {
+            const fmt = f.firmaDataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+            doc.addImage(f.firmaDataUrl, fmt, centerX - 18, lineY - 17, 36, 15, undefined, "FAST");
+          } catch (e) {}
+        }
+
+        doc.setDrawColor(51, 65, 85);
+        doc.setLineWidth(0.4);
+        const halfLine = Math.min(34, colW * 0.38);
+        doc.line(centerX - halfLine, lineY, centerX + halfLine, lineY);
+
+        let fy = lineY + 5;
+        if (limpiarEspacios(f.nombre)) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9.5);
+          doc.setTextColor(15, 23, 42);
+          doc.text(limpiarEspacios(f.nombre), centerX, fy, { align: "center" });
+          fy += 4.3;
+        }
+        if (limpiarEspacios(f.cargo)) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.5);
+          doc.setTextColor(51, 65, 85);
+          doc.text(limpiarEspacios(f.cargo), centerX, fy, { align: "center" });
+          fy += 4;
+        }
+        if (limpiarEspacios(f.area)) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(100, 116, 139);
+          doc.text(limpiarEspacios(f.area), centerX, fy, { align: "center" });
+        }
+      }
+
+      // Código de verificación
+      if (elCodigo.checked) {
+        doc.setFont("courier", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(generarCodigoVerificacion(indice), W - 14, H - 9, { align: "right" });
+      }
+    }
+
+    function sanitizarNombreArchivo(nombre) {
+      return nombre.replace(/[\\/:*?"<>|]/g, "").trim() || "Participante";
+    }
+
+    document.getElementById("btnDescargarUno").addEventListener("click", () => {
+      const participantes = validarParaExportar();
+      if (!participantes) return;
+
+      const idx = Math.min(state.indiceActual, participantes.length - 1);
+      const p = participantes[idx];
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      dibujarPaginaPdf(doc, p, idx);
+      doc.save(`Certificado - ${sanitizarNombreArchivo(p.nombre)}.pdf`);
+      toast.textContent = `Descargado: Certificado - ${p.nombre}.pdf`;
+    });
+
+    document.getElementById("btnDescargarTodos").addEventListener("click", () => {
+      const participantes = validarParaExportar();
+      if (!participantes) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      participantes.forEach((p, idx) => {
+        if (idx > 0) doc.addPage("a4", "landscape");
+        dibujarPaginaPdf(doc, p, idx);
+      });
+      doc.save(`Certificados - ${sanitizarNombreArchivo(elCurso.value)}.pdf`);
+      toast.textContent = `Descargado PDF único con ${participantes.length} certificados.`;
+    });
+
+    document.getElementById("btnDescargarZip").addEventListener("click", async () => {
+      const participantes = validarParaExportar();
+      if (!participantes) return;
+
+      toast.textContent = "Generando archivo ZIP...";
+      const { jsPDF } = window.jspdf;
+      const zip = new JSZip();
+
+      participantes.forEach((p, idx) => {
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        dibujarPaginaPdf(doc, p, idx);
+        const pdfBlob = doc.output("blob");
+        zip.file(`Certificado - ${sanitizarNombreArchivo(p.nombre)}.pdf`, pdfBlob);
+      });
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Certificados - ${sanitizarNombreArchivo(elCurso.value)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.textContent = `ZIP descargado con ${participantes.length} archivos PDF individuales.`;
+    });
+
+    // Logo upload
+    document.getElementById("logoInput").addEventListener("change", (e) => {
+      errLogo.textContent = "";
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > MAX_FILE_BYTES) {
+        errLogo.textContent = "El logo supera el límite de 2 MB.";
+        e.target.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.logoDataUrl = reader.result;
+        document.getElementById("btnQuitarLogo").hidden = false;
+        actualizarVistaPrevia();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById("btnQuitarLogo").addEventListener("click", () => {
+      state.logoDataUrl = null;
+      document.getElementById("logoInput").value = "";
+      document.getElementById("btnQuitarLogo").hidden = true;
+      actualizarVistaPrevia();
+    });
+
+    elTipo.addEventListener("change", () => {
+      elCuerpo.value = TEXTOS_SUGERIDOS[elTipo.value].cuerpo;
+      actualizarVistaPrevia();
+    });
+
+    elCantFirmantes.addEventListener("change", () => {
+      renderizarInputsFirmantes();
+      actualizarVistaPrevia();
+    });
+
+    [elPlantilla, elColor, elCurso, elOrg, elFecha, elHoras, elLugar, elCuerpo, elLista, elCodigo].forEach((el) => {
+      el.addEventListener("input", actualizarVistaPrevia);
+      el.addEventListener("change", actualizarVistaPrevia);
+    });
+
+    document.getElementById("btnPrevCert").addEventListener("click", () => {
+      const total = parsearParticipantes().length;
+      if (total === 0) return;
+      state.indiceActual = (state.indiceActual - 1 + total) % total;
+      actualizarVistaPrevia();
+    });
+
+    document.getElementById("btnNextCert").addEventListener("click", () => {
+      const total = parsearParticipantes().length;
+      if (total === 0) return;
+      state.indiceActual = (state.indiceActual + 1) % total;
+      actualizarVistaPrevia();
+    });
+
+    // Inicialización
+    renderizarInputsFirmantes();
+    actualizarVistaPrevia();
+  </script>
+</body>
+</html>
